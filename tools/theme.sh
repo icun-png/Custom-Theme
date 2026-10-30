@@ -80,6 +80,10 @@ del() { echo "rm -f $DIR/$1 2>/dev/null; content delete --uri $URI/$1 2>/dev/nul
 # itself, and an on-TV pick of one of its pictures is read back from it (WallpaperRotation.chosen), so a reset
 # that left the pictures behind still shows the theme it just removed. Both paths use this one string.
 CLEAR_WALLPAPERS="rm -f $DIR/wallpapers/*.[jJ][pP][gG] $DIR/wallpapers/*.[jJ][pP][eE][gG] $DIR/wallpapers/*.[pP][nN][gG] $DIR/wallpapers/*.[wW][eE][bB][pP] 2>/dev/null; content delete --uri $URI/wallpapers 2>/dev/null"
+ # Lockscreen wallpapers collection clear
+  LOCKSCREEN_CLEAR="rm -f \$DIR/lockscreen_wallpapers/*.[jJ][pP][gG] \$DIR/lockscreen_wallpapers/*.[jJ][pP][eE][gG]
+  \$DIR/lockscreen_wallpapers/*.[pP][nN][gG] \$DIR/lockscreen_wallpapers/*.[wW][eE][bB][pP] 2>/dev/null; content delete
+  --uri \$URI/lockscreen_wallpapers 2>/dev/null"
 
 if [ "${1:-}" = --reset ]; then
   tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); $(del wallpapers/captions.txt); $CLEAR_WALLPAPERS; printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision)" >/dev/null
@@ -146,10 +150,46 @@ done
 if [ -f "$THEME/wallpapers/captions.txt" ]; then
   "$PY" -I b64push.py "$THEME/wallpapers/captions.txt" "$(stage wallpapers/captions.txt)"
   tv "$(put wallpapers/captions.txt)" >/dev/null
-else
-  tv "$(del wallpapers/captions.txt)" >/dev/null
-fi
-tv "printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision)" >/dev/null
-"$PY" -I theme_restart.py
-echo applied
-echo "Theme $(basename "$THEME") is on the TV. Undo with: tools/theme.sh --reset"
+ # ... existing wallpapers/captions.txt block ends here ...
+  else
+    tv "$(del wallpapers/captions.txt)" >/dev/null
+  fi
+
+  # >>> TAMBAHAN LOCKSCREEN WALLPAPERS (baru) <<<
+  if [ -d "$THEME/lockscreen_wallpapers" ]; then
+    tv "$LOCKSCREEN_CLEAR" >/dev/null
+    for IMAGE in "$THEME"/lockscreen_wallpapers/*; do
+      [ -f "$IMAGE" ] || continue
+      NAME=$(basename "$IMAGE")
+      case "$NAME" in
+        *.[jJ][pP][gG]|*.[jJ][pP][eE][gG]|*.[pP][nN][gG]|*.[wW][eE][bB][pP])
+          [[ "$NAME" =~ ^[A-Za-z0-9_.-]+$ && "$NAME" != *..* ]] || continue
+          "$PY" -I b64push.py "$IMAGE" "$(stage "lockscreen_wallpapers/$NAME")"
+          tv "$(put "lockscreen_wallpapers/$NAME")" >/dev/null ;;
+      esac
+    done
+    # Captions
+    if [ -f "$THEME/lockscreen_wallpapers/captions.txt" ]; then
+      "$PY" -I b64push.py "$THEME/lockscreen_wallpapers/captions.txt" "$(stage lockscreen_wallpapers/captions.txt)"
+      tv "$(put lockscreen_wallpapers/captions.txt)" >/dev/null
+    else
+      tv "$(del lockscreen_wallpapers/captions.txt)" >/dev/null
+    fi
+  fi
+  # <<< AKHIR TAMBAHAN >>>
+
+  tv "printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision)" >/dev/null
+  "$PY" -I theme_restart.py
+  echo applied
+  echo "Theme $(basename "$THEME") is on the TV. Undo with: tools/theme.sh --reset"
+
+  ---
+
+  Dan jangan lupa di atas (sekitar baris 82, dekat CLEAR_WALLPAPERS) tambah definisi LOCKSCREEN_CLEAR:
+
+  # Lockscreen wallpapers collection clear
+  LOCKSCREEN_CLEAR="rm -f \$DIR/lockscreen_wallpapers/*.[jJ][pP][gG] \$DIR/lockscreen_wallpapers/*.[jJ][pP][eE][gG]
+  \$DIR/lockscreen_wallpapers/*.[pP][nN][gG] \$DIR/lockscreen_wallpapers/*.[wW][eE][bB][pP] 2>/dev/null; content delete
+  --uri \$URI/lockscreen_wallpapers 2>/dev/null"
+
+  ---
