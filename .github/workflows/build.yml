@@ -1,5 +1,4 @@
- @"
-  name: Build
+ name: Build
 
   on:
     push:
@@ -30,7 +29,7 @@
             path: |
               ~/.gradle/caches
               ~/.gradle/wrapper
-            key: gradle-\${{ runner.os }}-\${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+            key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         - name: Make gradlew executable
           run: chmod +x launcher/gradlew
         - name: Build Debug APK
@@ -41,4 +40,5 @@
             name: app-debug.apk
             path: launcher/app/build/outputs/apk/debug/app-debug.apk
             retention-days: 7
-  "@ | Set-Content -Encoding utf8 .github/workflows/build.yml
+
+  ---
